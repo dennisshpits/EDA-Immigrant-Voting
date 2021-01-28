@@ -1,0 +1,634 @@
+---
+title: "Voting patterns of Immigrants past & present"
+output: html_notebook
+author: "Dennis Shpits"
+date: "`r Sys.Date()`"
+---
+
+If you think of immigration as the act of importing political ideology then perhaps by focusing on voting patterns of immigrants, you can make some interesting conclusions. In contemporary discourse surrounding immigration there is a politically significant category of people known as [Dreamers](https://americasvoice.org/blog/what-is-a-dreamer/). How will the potential executive orders by the Democratic President influence the outcomes of future elections? In this R notebook we will explore the ANES dataset. Particularly we will explore how foreign born voters and their children can sway election results toward a certain party.
+```{r load libraries, warning=FALSE, message=FALSE, include=FALSE}
+#Have to install the following package
+packages.used=as.list(
+  c(
+  "tidyverse",
+  "haven",
+  "devtools",
+  "RColorBrewer",
+  "data.table",
+  "ggplot2",
+  "dplyr")
+)
+
+check.pkg = function(x){
+  if(!require(x, character.only=T)) install.packages(x, 
+                                                     character.only=T,
+                                                     dependence=T)
+}
+
+lapply(packages.used, check.pkg)
+
+#turn warnings off
+options(warn=-1)
+#turn warnings on
+#options(warn=0)
+
+library(ggplot2)
+library(haven)
+library(dplyr)
+
+zipF<-"../data/anes_timeseries_cdf_sav.zip"
+unzip(zipF,exdir="../output")
+data_sav_file <- "../output/anes_timeseries_cdf.sav"
+anes_dat <- read_sav(data_sav_file)
+```
+In order to explore immigrant voting patterns we should first look at the past. What countries were our respondents born in? Respondents born outside the US and whose parents were also born outside the US are plotted below. Keep the visual in mind because we will refer back to it later.
+```{css, echo=FALSE}
+pre {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 500px;
+}
+```
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+save_column_Birth<-grep("VCF0142", colnames(anes_dat))
+
+##Remove NA values from Birth Country Column
+Born_cleaned<-anes_dat[complete.cases(anes_dat[save_column_Birth]),]
+
+##Remove people born in the US
+non_us_Born_cleaned<-Born_cleaned %>% filter(VCF0142 > 199)
+
+##Remove if both parents born in US
+non_us_Born_cleaned_parents_too<-non_us_Born_cleaned %>% filter(VCF0143 == 5)
+
+##Filter unique people out so we have one record per respondent
+non_us_Born_cleaned_unique<-non_us_Born_cleaned_parents_too[!duplicated(non_us_Born_cleaned_parents_too[ , c("VCF0006a")]),]
+
+###Create pie chart
+###pie chart of respondant origin in the entire dataset
+chart_table<-select(non_us_Born_cleaned_unique, Country_of_Birth=VCF0142)
+
+##Update to show country names
+
+#convert column to string
+string_column <- data.frame(lapply(chart_table, as.character), stringsAsFactors=FALSE)
+
+#update each country
+string_column[string_column$Country_of_Birth == 315, "Country_of_Birth"] <- "Germany"
+string_column[string_column$Country_of_Birth == 351, "Country_of_Birth"] <- "Italy"
+string_column[string_column$Country_of_Birth == 209, "Country_of_Birth"] <- "Canada"
+string_column[string_column$Country_of_Birth == 219, "Country_of_Birth"] <- "Mexico"
+string_column[string_column$Country_of_Birth == 336, "Country_of_Birth"] <- "Poland"
+string_column[string_column$Country_of_Birth == 337, "Country_of_Birth"] <- "Russia"
+string_column[string_column$Country_of_Birth == 301, "Country_of_Birth"] <- "England"
+string_column[string_column$Country_of_Birth == 428, "Country_of_Birth"] <- "Southeast Asia"
+string_column[string_column$Country_of_Birth == 310, "Country_of_Birth"] <- "Austria"
+string_column[string_column$Country_of_Birth == 259, "Country_of_Birth"] <- "South America"
+string_column[string_column$Country_of_Birth == 302, "Country_of_Birth"] <- "Ireland"
+string_column[string_column$Country_of_Birth == 333, "Country_of_Birth"] <- "Hungary"
+string_column[string_column$Country_of_Birth == 324, "Country_of_Birth"] <- "Sweden"
+string_column[string_column$Country_of_Birth == 331, "Country_of_Birth"] <- "Czechoslovakia"
+string_column[string_column$Country_of_Birth == 343, "Country_of_Birth"] <- "Greece"
+string_column[string_column$Country_of_Birth == 317, "Country_of_Birth"] <- "Netherlands"
+string_column[string_column$Country_of_Birth == 323, "Country_of_Birth"] <- "Norway"
+string_column[string_column$Country_of_Birth == 312, "Country_of_Birth"] <- "France"
+string_column[string_column$Country_of_Birth == 303, "Country_of_Birth"] <- "Scotland"
+string_column[string_column$Country_of_Birth == 345, "Country_of_Birth"] <- "Yugoslavia"
+string_column[string_column$Country_of_Birth == 404, "Country_of_Birth"] <- "India"
+string_column[string_column$Country_of_Birth == 431, "Country_of_Birth"] <- "China"
+string_column[string_column$Country_of_Birth == 452, "Country_of_Birth"] <- "Korea"
+string_column[string_column$Country_of_Birth == 509, "Country_of_Birth"] <- "Turkey"
+string_column[string_column$Country_of_Birth == 338, "Country_of_Birth"] <- "Ukraine"
+string_column[string_column$Country_of_Birth == 451, "Country_of_Birth"] <- "Japan"
+string_column[string_column$Country_of_Birth == 235, "Country_of_Birth"] <- "Haiti"
+string_column[string_column$Country_of_Birth == 313, "Country_of_Birth"] <- "Germany"
+string_column[string_column$Country_of_Birth == 321, "Country_of_Birth"] <- "Denmark"
+string_column[string_column$Country_of_Birth == 208, "Country_of_Birth"] <- "Canada"
+string_column[string_column$Country_of_Birth == 233, "Country_of_Birth"] <- "Cuba"
+string_column[string_column$Country_of_Birth == 344, "Country_of_Birth"] <- "Rumania"
+string_column[string_column$Country_of_Birth == 207, "Country_of_Birth"] <- "Canada"
+string_column[string_column$Country_of_Birth == 334, "Country_of_Birth"] <- "Latvia"
+string_column[string_column$Country_of_Birth == 699, "Country_of_Birth"] <- "African country"
+string_column[string_column$Country_of_Birth == 704, "Country_of_Birth"] <- "Australia"
+string_column[string_column$Country_of_Birth == 239, "Country_of_Birth"] <- "West Indies"
+string_column[string_column$Country_of_Birth == 311, "Country_of_Birth"] <- "Belgium"
+string_column[string_column$Country_of_Birth == 504, "Country_of_Birth"] <- "Israel"
+string_column[string_column$Country_of_Birth == 231, "Country_of_Birth"] <- "West Indies"
+string_column[string_column$Country_of_Birth == 335, "Country_of_Birth"] <- "Lithuania"
+string_column[string_column$Country_of_Birth == 353, "Country_of_Birth"] <- "Spain"
+string_column[string_column$Country_of_Birth == 237, "Country_of_Birth"] <- "West Indies"
+string_column[string_column$Country_of_Birth == 238, "Country_of_Birth"] <- "West Indies"
+string_column[string_column$Country_of_Birth == 304, "Country_of_Birth"] <- "Wales"
+string_column[string_column$Country_of_Birth == 318, "Country_of_Birth"] <- "Switzerland"
+string_column[string_column$Country_of_Birth == 352, "Country_of_Birth"] <- "Portugal"
+string_column[string_column$Country_of_Birth == 229, "Country_of_Birth"] <- "Central America"
+string_column[string_column$Country_of_Birth == 229, "Country_of_Birth"] <- "Central America"
+string_column[string_column$Country_of_Birth == 332, "Country_of_Birth"] <- "Estonia"
+string_column[string_column$Country_of_Birth == 399, "Country_of_Birth"] <- "Europe"
+string_column[string_column$Country_of_Birth == 406, "Country_of_Birth"] <- "Pakistan"
+string_column[string_column$Country_of_Birth == 434, "Country_of_Birth"] <- "Taiwan"
+string_column[string_column$Country_of_Birth == 502, "Country_of_Birth"] <- "Egypt"
+string_column[string_column$Country_of_Birth == 655, "Country_of_Birth"] <- "South Africa"
+string_column[string_column$Country_of_Birth == 201, "Country_of_Birth"] <- "North America"
+string_column[string_column$Country_of_Birth == 314, "Country_of_Birth"] <- "Germany"
+string_column[string_column$Country_of_Birth == 501, "Country_of_Birth"] <- "Egypt"
+string_column[string_column$Country_of_Birth == 503, "Country_of_Birth"] <- "Iraq"
+string_column[string_column$Country_of_Birth == 505, "Country_of_Birth"] <- "Jordan"
+string_column[string_column$Country_of_Birth == 997, "Country_of_Birth"] <- "Other"
+string_column[string_column$Country_of_Birth == 308, "Country_of_Birth"] <- "UK"
+string_column[string_column$Country_of_Birth == 322, "Country_of_Birth"] <- "Finland"
+string_column[string_column$Country_of_Birth == 325, "Country_of_Birth"] <- "Iceland"
+string_column[string_column$Country_of_Birth == 339, "Country_of_Birth"] <- "Europe"
+string_column[string_column$Country_of_Birth == 354, "Country_of_Birth"] <- "Malta"
+string_column[string_column$Country_of_Birth == 401, "Country_of_Birth"] <- "Afghanistan"
+string_column[string_column$Country_of_Birth == 432, "Country_of_Birth"] <- "Other"
+string_column[string_column$Country_of_Birth == 499, "Country_of_Birth"] <- "Asia"
+string_column[string_column$Country_of_Birth == 506, "Country_of_Birth"] <- "Lebanon"
+string_column[string_column$Country_of_Birth == 232, "Country_of_Birth"] <- "Other"
+string_column[string_column$Country_of_Birth == 508, "Country_of_Birth"] <- "Syria"
+###########################################
+
+x<-sort(table(string_column$Country_of_Birth), decreasing = TRUE)
+
+##add some color and labels
+barplot(x,
+        col = rainbow(length(x)),
+        main = "Respondent Birth Country (Non US) 1952-1994",
+        xlab = "Countries",
+        ylab = "Responses",
+        las = 1,
+)
+legend("topright", 
+       legend = row.names(x), 
+       fill = rainbow(length(x)), ncol = 3,
+       cex = 0.5)
+
+invisible({capture.output({
+dev.copy(png,'../figs/allcountires.png')
+dev.off()
+})})
+```
+The US truly is a melting pot of different cultures. We do not have an even distribution of respondents from each country, but nevertheless they share one thing in common: they were not born in the US and neither were their parents. Notice how most of our immigrants are from Europe.
+```{r, echo=FALSE}
+sprintf("We have %i unique respondents that were born outside the US between 1952 and 1994", nrow(string_column))
+```
+Using this sample size we can get some insight into how foreign born Americans vote. We look at how respondents self Identify. We take their last known response. We see that we have more Democrats in our respondents than Republicans. That should not be surprising since this is well stated in the media.
+
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+###pie chart of respondent party ID
+pie_chart_party<-select(non_us_Born_cleaned_unique, Party_ID=VCF0303)
+
+pie_chart_party_cleaned<-pie_chart_party[complete.cases(pie_chart_party[1]),]
+
+string_party_col <- data.frame(lapply(pie_chart_party_cleaned, as.character), stringsAsFactors=FALSE)
+
+cols = c("royalblue", "green", "red")
+leg = c("Democrats", "Independents", "Republicans")
+#update each country
+string_party_col[string_party_col$Party_ID == 1, "Party_ID"] <- "Democrats"
+string_party_col[string_party_col$Party_ID == 2, "Party_ID"] <- "Independents"
+string_party_col[string_party_col$Party_ID == 3, "Party_ID"] <- "Republicans"
+
+pie_labels <- paste0(table(string_party_col), " = ", round(100 * table(string_party_col)/sum(table(string_party_col)), 2), "%")
+
+# Plot the chart with title.
+pie(table(string_party_col),cex = 0.8, main = "Party ID of Immigrants 1952-1994", col = cols, labels = pie_labels)
+
+legend("bottomright",legend=leg,bty="n", fill=cols)
+
+invisible({capture.output({
+dev.copy(png,'../figs/immigrantparty.png')
+dev.off()
+})})
+```
+Next we want to drill down on the above graph. We identify what backgrounds lean towards Republicans.
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+party_birth_place<-select(non_us_Born_cleaned_unique, Party_ID=VCF0303, Country_of_Birth = VCF0142)
+
+party_birth_place_cleaned<-party_birth_place[complete.cases(party_birth_place[1]),]
+
+SEA_born<-party_birth_place_cleaned %>% filter(Country_of_Birth == 428)
+
+string_party_col_SEA <- data.frame(lapply(SEA_born, as.character), stringsAsFactors=FALSE)
+
+#update each country
+string_party_col_SEA[string_party_col_SEA$Party_ID == 1, "Party_ID"] <- "Democrats"
+string_party_col_SEA[string_party_col_SEA$Party_ID == 2, "Party_ID"] <- "Independents"
+string_party_col_SEA[string_party_col_SEA$Party_ID == 3, "Party_ID"] <- "Republicans"
+
+pie_labels <- paste0(table(string_party_col_SEA), " = ", round(100 * table(string_party_col_SEA)/sum(table(string_party_col_SEA)), 2), "%")
+
+# Plot the chart with title.
+pie(table(string_party_col_SEA$Party_ID),cex = 0.8, main = "Party ID of Southeast Asians 1952-1994", col = cols, labels = pie_labels)
+
+legend("bottomright",legend=leg,bty="n", fill=cols)
+
+invisible({capture.output({
+dev.copy(png,'../figs/southeastasianparty.png')
+dev.off()
+})})
+```
+Looks like Republicans had a stronghold with Southeast Asians between 1952-1994. The following places are considered to be in Southeast Asia from our ANES dataset: Indochina, Thailand, Malaysia, Burma, Philippines, Indonesia. This is mainly due to anti-communist refugees that fled those areas.
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+South_America_born_filtered<-party_birth_place_cleaned %>% filter(Country_of_Birth == 259)
+
+
+string_party_col_South_America <- data.frame(lapply(South_America_born_filtered, as.character), stringsAsFactors=FALSE)
+
+#update each country
+string_party_col_South_America[string_party_col_South_America$Party_ID == 1, "Party_ID"] <- "Democrats"
+string_party_col_South_America[string_party_col_South_America$Party_ID == 2, "Party_ID"] <- "Independents"
+string_party_col_South_America[string_party_col_South_America$Party_ID == 3, "Party_ID"] <- "Republicans"
+
+pie_labels <- paste0(table(string_party_col_South_America), " = ", round(100 * table(string_party_col_South_America)/sum(table(string_party_col_South_America)), 2), "%")
+
+# Plot the chart with title.
+pie(table(string_party_col_South_America$Party_ID),cex = 0.8, main = "Party ID of South Americans 1952-1994", col = cols, labels = pie_labels)
+
+legend("bottomright",legend=leg,bty="n", fill=cols)
+
+invisible({capture.output({
+dev.copy(png,'../figs/southamericanparty.png')
+dev.off()
+})})
+```
+South America seems like a great place to recruit Republican voters in the years between 1952 and 1994.
+
+Most of the Republican South American Immigrants viewed religion as important. I'm sure some of these conservative values were passed on to their children.
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+SA_Analyses<-select(non_us_Born_cleaned_unique, 
+                          Party_ID=VCF0303, 
+                          Country_of_Birth = VCF0142,
+                          Religion_important = VCF0846
+                          )
+
+SA_cleaned<-SA_Analyses[complete.cases(SA_Analyses[1]),]
+
+SA_Analyses_born<-SA_cleaned %>% filter(Country_of_Birth == 259)
+
+Only_Rep_SA<-SA_Analyses_born %>% filter(Party_ID == 3)
+
+scale_SA<-Only_Rep_SA %>% group_by(Religion_important) %>% summarise(count_val = n())
+
+scale_SA_cleaned<-scale_SA[complete.cases(scale_SA[1]),]
+
+string_scale_SA_cleaned <- data.frame(lapply(scale_SA_cleaned, as.character), stringsAsFactors=FALSE)
+
+#update each Yes/no
+string_scale_SA_cleaned[string_scale_SA_cleaned$Religion_important == 1, "Religion_important"] <- "Yes"
+string_scale_SA_cleaned[string_scale_SA_cleaned$Religion_important == 2, "Religion_important"] <- "No"
+
+barplot(as.integer(string_scale_SA_cleaned$count_val),names.arg=string_scale_SA_cleaned$Religion_important,xlab="Yes/No",ylab="Count",col="red",
+        main="Republican South Americans view Religion Important 1952-1994",border="yellow")
+
+invisible({capture.output({
+dev.copy(png,'../figs/southamericanreligion.png')
+dev.off()
+})})
+```
+In order to see how Immigrants can impact elections we see if there is an increase in eligible voter population. With an increase in eligible voter population is there a clear winning trend for a certain party?
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+save_column<-grep("VCF0704a", colnames(non_us_Born_cleaned_parents_too))
+
+eligible_save_column<-grep("VCF0737", colnames(non_us_Born_cleaned_parents_too))
+
+eligible<-non_us_Born_cleaned_parents_too[complete.cases(non_us_Born_cleaned_parents_too[eligible_save_column]),]
+
+Which_President_Party_vote<-non_us_Born_cleaned_parents_too[complete.cases(non_us_Born_cleaned_parents_too[save_column]),]
+
+#voted Democrat
+Which_President_Dem_vote<-Which_President_Party_vote %>% filter(VCF0704a == 1)
+
+#voted Republican
+Which_President_Rep_vote<-Which_President_Party_vote %>% filter(VCF0704a == 2)
+
+#eligble to vote
+yes_eligible<-eligible %>% filter(VCF0737 == 2)
+
+#change theme
+theme_set(theme_light())
+
+#change column names
+President_Dem_vote_years<-select(Which_President_Dem_vote, Party_Vote=VCF0704a, Year = VCF0004)
+
+#change column names
+President_Rep_vote_years<-select(Which_President_Rep_vote, Party_Vote=VCF0704a, Year = VCF0004)
+
+#change column names
+eligible_vote_years<-select(yes_eligible, is_eligible_to_vote=VCF0737, Year = VCF0004)
+
+#grouped republican
+President_Rep_vote_years_grouped<-President_Rep_vote_years %>% group_by(Year) %>% summarise(count_votes = n())
+
+#grouped democrat
+President_Dem_vote_years_grouped<-President_Dem_vote_years %>% group_by(Year) %>% summarise(count_votes = n())
+
+#grouped
+eligible_vote_years_grouped<-eligible_vote_years %>% group_by(Year) %>% summarise(count_voter = n())
+
+jointdataset <- merge(President_Dem_vote_years_grouped, President_Rep_vote_years_grouped, by = 'Year')
+
+jointdataset_eligible <- merge(jointdataset, eligible_vote_years_grouped, by = 'Year')
+
+plt<-ggplot() + geom_line(data = jointdataset_eligible, aes(x=Year, y = count_votes.x, color = "blue")) + geom_line(data = jointdataset_eligible, aes(x=Year, y = count_votes.y, color = "red"))+geom_line(data = jointdataset_eligible,aes(x=Year, y = count_voter, color = "black"))
+
+plt<-plt + labs(
+  title = "Actual Voting by Immigrants for President vs Eligible Immigrants",
+  subtitle = "Period 1952-1992",
+  caption = "Data: ANES",
+  x = "Year",
+  y = "Voters"
+  )
+
+plt + scale_color_manual(name = "Line meaning", values = c("blue" = "blue", "red" = "red", "black" = "black" ), labels = c("Eligible to Vote", "Voted for Dem Pres", "Voted for Rep Pres"))
+
+invisible({capture.output({
+dev.copy(png,'../figs/eligiblevsactual.png')
+dev.off()
+})})
+```
+From the limited data we have, we see in 1992 when there was a spike in new eligible voters, there were more votes for the Democratic Presidential candidate than for the Republican by our respondents.
+
+<font size="20"> Children of Immigrants</font>
+
+Unfortunately we only have respondent birth country until 1994. In order to expand our sample size we now ignore the respondent's birth country and only look at respondents whose parents were born outside the US. This will allow us to look at more recent trends and have a greater sample size.
+```{r, echo=FALSE}
+save_column_Parents_Born<-grep("VCF0143", colnames(anes_dat))
+
+##Remove NA values from Parents born Column
+Parents_Born<-anes_dat[complete.cases(anes_dat[save_column_Parents_Born]),]
+
+non_us_parents<-Parents_Born %>% filter(VCF0143 == 5)
+
+##Filter unique people out so we have one record per respondent
+non_us_Born_Parents_cleaned_unique<-non_us_parents[!duplicated(non_us_parents[ , c("VCF0006a")]),]
+
+sprintf("We have %i unique respondents whose parents were born outside the US", nrow(non_us_Born_Parents_cleaned_unique))
+```
+Refer to our pie chart above of Southeast Asian Immigrants that showed a Republican majority. If we look at today's youth that come from an Asian background, do they still have similar views as their parents?
+```{r, echo=FALSE}
+recent_years<-non_us_parents %>% filter(VCF0004 > 2000)
+unique_young<-recent_years[!duplicated(recent_years[ , c("VCF0006a")]),]
+young_group<-unique_young %>% filter(VCF0102 < 3)
+Asian_group<-young_group %>% filter(VCF0105a == 3)
+
+party_younger_Asians<-select(Asian_group, Party_ID=VCF0303, race = VCF0105a)
+
+party_younger_Asians <- data.frame(lapply(party_younger_Asians, as.character), stringsAsFactors=FALSE)
+
+#update each country
+party_younger_Asians[party_younger_Asians$Party_ID == 1, "Party_ID"] <- "Democrats"
+party_younger_Asians[party_younger_Asians$Party_ID == 2, "Party_ID"] <- "Independents"
+party_younger_Asians[party_younger_Asians$Party_ID == 3, "Party_ID"] <- "Republicans"
+
+pie_labels <- paste0(table(party_younger_Asians), " = ", round(100 * table(party_younger_Asians)/sum(table(party_younger_Asians)), 2), "%")
+
+# Plot the chart with title.
+pie(table(party_younger_Asians$Party_ID),cex = 0.8, main = "Party ID of Younger Asians (Parents Foreign born)", col = cols, labels = pie_labels)
+
+legend("bottomright",legend=leg,bty="n", fill=cols)
+
+invisible({capture.output({
+dev.copy(png,'../figs/youngerasians.png')
+dev.off()
+})})
+```
+In a single generation the tide has changed. I am not the first to stumble upon this [finding](https://www.npr.org/sections/itsallpolitics/2015/09/16/439574726/how-asian-american-voters-went-from-republican-to-democratic).
+
+Since the 1950's there has always been a number of immigrants each election that did not participate. They were not eligible to participate in elections due to citizenship status. From our respondents that have parents born outside the US, how many of them are not eligible to vote or simply did not vote each election year?
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+not_reg_not_vote_column<-grep("VCF0703", colnames(anes_dat))
+
+not_reg_not_vote<-non_us_parents[complete.cases(non_us_parents[not_reg_not_vote_column]),]
+
+not_reg_not_vote_overall<-not_reg_not_vote %>% filter(VCF0703 == 1)
+
+#change column names
+eligible_vote_years_non_US_parents<-select(not_reg_not_vote_overall, not_registered_did_not_vote=VCF0703, Year = VCF0004)
+
+
+#grouped by year
+eligible_vote_years_non_US_parents_grouped<-eligible_vote_years_non_US_parents %>% group_by(Year) %>% summarise(count_non_voters = n())
+
+barplot(eligible_vote_years_non_US_parents_grouped$count_non_voters,names.arg=eligible_vote_years_non_US_parents_grouped$Year,xlab="Year",ylab="No Vote",col="blue",
+main="Not registered and did not vote (Respondent has Foreign born parents)",border="red")
+
+invisible({capture.output({
+dev.copy(png,'../figs/immigrantsWhoDontVote.png')
+dev.off()
+})})
+```
+Dreamers are not citizens and therefore cannot participate in elections. This might change in the future because of new legislation to naturalize Dreamers. We want to further analyze this set of individuals. We will only look at data since 2004 since Dreamers have an average age of about 24 years old. We will only look at respondents that fall into the age groups between 17-34.
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+non_US_parents_edu_inc_all_columns<-select(not_reg_not_vote_overall, 
+                                           year_case_id = VCF0006,
+                                           unique_resp_num = VCF0006a,
+                                           not_registered_did_not_vote=VCF0703, 
+                                           Year = VCF0004, 
+                                           Education_6_cat = VCF0140, 
+                                           Education_4_cat=VCF0110, 
+                                           Education_7_cat=VCF0140a,
+                                           Hispanic_Origin = VCF0108,
+                                           Age_Group=VCF0102,
+                                           Political_View = VCF0303,
+                                           Family_Inc_Group=VCF0114,
+                                           Left_right_Scale=VCF9240,
+                                           race=VCF0105a
+                                           )
+####Year should be greater than 2004###
+recent_years<-non_US_parents_edu_inc_all_columns %>% filter(Year > 2000)
+##age should be younger people
+young_group<-recent_years %>% filter(Age_Group < 3)
+
+##Filter unique people out so we have one record per respondent
+unique_young<-young_group[!duplicated(young_group[ , c("unique_resp_num")]),]
+
+save_column_pol_view<-grep("Political_View", colnames(unique_young))
+
+##Remove NA values from Political_View
+unique_young_cleaned<-unique_young[complete.cases(unique_young[save_column_pol_view]),]
+
+string_unique_young <- data.frame(lapply(unique_young_cleaned, as.character), stringsAsFactors=FALSE)
+
+#update each country
+string_unique_young[string_unique_young$Political_View == 1, "Political_View"] <- "Democrats"
+string_unique_young[string_unique_young$Political_View == 2, "Political_View"] <- "Independents"
+string_unique_young[string_unique_young$Political_View == 3, "Political_View"] <- "Republicans"
+
+pie_lab <- paste0(table(string_unique_young$Political_View), " = ", round(100 * table(string_unique_young$Political_View)/sum(table(string_unique_young$Political_View)), 2), "%")
+
+# Plot the chart with title.
+pie(table(string_unique_young$Political_View),cex = 0.8, main = paste("Party ID of Children of Immigrants (Young age groups 17-34) n=",nrow(string_unique_young)), col = cols, labels = pie_lab)
+
+legend("bottomright",legend=leg,bty="n", fill=cols)
+
+invisible({capture.output({
+dev.copy(png,'../figs/partyOfDreamers.png')
+dev.off()
+})})
+```
+There is no surprise here. We have a majority of Democrats for this group, however when the same respondents were asked to place themselves on a [left-right political spectrum](https://en.wikipedia.org/wiki/Left%E2%80%93right_political_spectrum) we see something interesting. 
+
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+save_column_spec<-grep("Left_right_Scale", colnames(unique_young))
+
+##Remove NA values from Political_View
+unique_young_cleaned_spec<-unique_young[complete.cases(unique_young[save_column_spec]),]
+
+#change column names
+spectrum<-select(unique_young_cleaned_spec, Spectrum=Left_right_Scale)
+
+
+#grouped by year
+spectrum_grouped<-spectrum %>% group_by(Spectrum) %>% summarise(count_spec = n())
+
+barplot(spectrum_grouped$count_spec,names.arg=spectrum_grouped$Spectrum,xlab="Left(0)-Right(10) Spectrum",ylab="# of respondents",col="orange",
+main=paste("Political Spectrum Children of Immigrants (Ages 17-34) n=", nrow(spectrum)),border="purple")
+
+invisible({capture.output({
+dev.copy(png,'../figs/HistogramOfDreamers.png')
+dev.off()
+})})
+```
+Very few are towards the left of the political spectrum. We have more right leaning individuals. So even though the respondents are mostly democrats, their political views fall more towards moderates or conservatives.
+
+What can we see in the differences of educational attainment of these groups?
+We look at respondents that are 25 or older to get a clearer idea of their final level of education. 
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+age_group<-unique_young_cleaned %>% filter(Age_Group > 1)
+
+stacked_bar<-select(age_group, 
+                    Education=Education_7_cat,
+                    Party_Affiliation = Political_View,
+                    )
+
+stacked_bar_grouped<-stacked_bar %>% group_by(Party_Affiliation, Education) %>% summarise(count_val = n())
+
+##Remove NA values
+stacked_bar_grouped_cleaned<-stacked_bar_grouped[complete.cases(stacked_bar_grouped[2]),]
+
+#factor_stacked_bar_grouped<-as_factor(stacked_bar_grouped_cleaned,ordered = FALSE)
+
+factor_stacked_bar_grouped <- data.frame(lapply(stacked_bar_grouped_cleaned, as.character), stringsAsFactors=FALSE)
+
+#update each country
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Party_Affiliation == 1, "Party_Affiliation"] <- "Democrats"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Party_Affiliation == 2, "Party_Affiliation"] <- "Independents"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Party_Affiliation == 3, "Party_Affiliation"] <- "Republicans"
+
+factor_stacked_bar_grouped$count_val <- as.integer(factor_stacked_bar_grouped$count_val)
+
+#change education to have more meaning
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Education == 1, "Education"] <- "8 grades or less ('grade school')"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Education == 2, "Education"] <- "9-12 grades no diploma"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Education == 3, "Education"] <- "12 grades, diploma or equivalency"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Education == 4, "Education"] <- "12 grades, diploma or equivalency"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Education == 5, "Education"] <- "Some college, no degree"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Education == 6, "Education"] <- "BA level degrees"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Education == 7, "Education"] <- "Advanced degrees"
+
+ggplot(data = factor_stacked_bar_grouped, aes(fill=Education, y=count_val, x=Party_Affiliation)) + geom_bar(position='stack', stat='identity') + labs(
+  title = "Children of Immigrants Ages 25-34",
+  subtitle = "Period 2004-2016",
+  caption = "Data: ANES",
+  x = "Self Identified Party",
+  y = "Respondents"
+  )
+
+invisible({capture.output({
+dev.copy(png,'../figs/EducationOfDreamers.png')
+dev.off()
+})})
+```
+No clear patterns emerge from looking at educational attainment. Both Democrats and Republicans have an equal mix of respondents that have similar education levels.
+
+During our initial analysis for the years between 1952-1994 we saw that the majority of immigrant respondents were born in Europe. What is the ethnic background of the more recent group of young children of immigrants that were not registered to vote?
+```{r  message=FALSE, warning = FALSE, echo=FALSE}
+
+
+race_column<-grep("race", colnames(unique_young))
+race_cleaned<-unique_young[complete.cases(unique_young[race_column]),]
+
+race_cleaned_table<-select(race_cleaned, race=race)
+
+##Update to show country names
+
+#convert column to string
+string_column_race <- data.frame(lapply(race_cleaned_table, as.character), stringsAsFactors=FALSE)
+
+#update each race
+string_column_race[string_column_race$race == 5, "race"] <- "Hispanic"
+string_column_race[string_column_race$race == 1, "race"] <- "White"
+string_column_race[string_column_race$race == 3, "race"] <- "Asian"
+string_column_race[string_column_race$race == 2, "race"] <- "Black"
+string_column_race[string_column_race$race == 6, "race"] <- "multiple races"
+
+x<-sort(table(string_column_race$race), decreasing = TRUE)
+
+##add some color and labels
+barplot(x,
+        col = rainbow(length(x)),
+        main = "Younger Respondent Race (Non voting & Parents Immigrants) 2004-2016",
+        xlab = "Countries",
+        ylab = "Responses",
+        las = 1,
+)
+legend("topright", 
+       legend = row.names(x), 
+       fill = rainbow(length(x)), ncol = 3,
+       cex = 0.9)
+
+invisible({capture.output({
+dev.copy(png,'../figs/races.png')
+dev.off()
+})})
+```
+We see a clear pattern emerging. The group of younger children of immigrants who are not eligible to vote are now mostly Hispanic. There has been a shift in demographics of immigrants since the second half of the 20th century. How do we expect them to vote if they were given the ability to cast a ballot?
+
+We see how the Hispanic vote might influence future elections since most dreamers are of Hispanic origin.
+```{r  message=FALSE, warning = FALSE, echo=FALSE}
+stacked_bar<-select(unique_young_cleaned, 
+                    Hispanic = Hispanic_Origin,
+                    Party_Affiliation = Political_View,
+                    )
+
+stacked_bar_grouped<-stacked_bar %>% group_by(Party_Affiliation, Hispanic) %>% summarise(count_val = n())
+
+##Remove NA values
+stacked_bar_grouped_cleaned<-stacked_bar_grouped[complete.cases(stacked_bar_grouped[2]),]
+
+factor_stacked_bar_grouped<-as_factor(stacked_bar_grouped_cleaned,ordered = FALSE)
+
+factor_stacked_bar_grouped <- data.frame(lapply(stacked_bar_grouped_cleaned, as.character), stringsAsFactors=FALSE)
+
+#update each country
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Party_Affiliation == 1, "Party_Affiliation"] <- "Democrats"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Party_Affiliation == 2, "Party_Affiliation"] <- "Independents"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Party_Affiliation == 3, "Party_Affiliation"] <- "Republicans"
+
+factor_stacked_bar_grouped$count_val<-as.integer(factor_stacked_bar_grouped$count_val)
+
+#change ethnicity to have more meaning
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Hispanic == 1, "Hispanic"] <- "Yes"
+factor_stacked_bar_grouped[factor_stacked_bar_grouped$Hispanic == 2, "Hispanic"] <- "No"
+
+
+ggplot(data = factor_stacked_bar_grouped, aes(fill=Hispanic, y=count_val, x=Party_Affiliation)) + geom_bar(position='stack', stat='identity') + labs(
+  title = "Children of Immigrants Ages 17-34",
+  subtitle = "Period 2004-2016",
+  caption = "Data: ANES",
+  x = "Party",
+  y = "Respondents"
+  )
+
+invisible({capture.output({
+dev.copy(png,'../figs/EthnicityOfDreamers.png')
+dev.off()
+})})
+```
+<font size="20">Final Thoughts</font>
+
+It is clear that if the current administration would like to remain in power it must take steps to [naturalize more undocumented immigrants](https://www.phoenixnewtimes.com/news/president-biden-arizona-doug-ducey-immigration-daca-border-wall-trump-11526981). However, the current administration should walk a thin line when it comes to the political spectrum. We see from our respondents that they are not extremely far left and therefore will vote accordingly if the current administration goes too far astray.
